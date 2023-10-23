@@ -26,7 +26,8 @@ apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 34
+
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -51,19 +52,7 @@ android {
         targetSdkVersion 30
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        ndk {
-            abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-        }
-        python {
-            buildPython "C:/Users/esbach5/AppData/Local/Programs/Python/Python38/python.exe"
 
-            pip {
-                install "scipy"
-                install "numpy"
-                install "SPARQLWrapper"
-                //  specify any other package to install.
-            }
-        }
     }
 
     buildTypes {
