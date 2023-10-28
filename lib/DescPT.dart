@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'Categories.dart';
 import 'LikedEntry.dart';
@@ -10,15 +10,15 @@ class DescPT extends StatefulWidget {
   final Future<Categories> futureCategories;
 
   DescPT(
-      {required this.futureCategories, required this.onLikePressed, required List<
-          LikedEntry> likedEntries});
+      {required this.futureCategories,
+      required this.onLikePressed,
+      required List<LikedEntry> likedEntries});
 
   @override
   _DescPTState createState() => _DescPTState();
 }
 
 class _DescPTState extends State<DescPT> {
-
   bool isButtonPressed = false;
 
   @override
@@ -37,7 +37,9 @@ class _DescPTState extends State<DescPT> {
               children: <Widget>[
                 Column(
                   children: <Widget>[
-                    Text(data!.lexemeId)
+                    Text(data!.lexemeId),
+                    Text(data!.lemma),
+                    Image.network(data!.full_work_at),
                   ],
                 ),
                 ElevatedButton(
@@ -49,17 +51,10 @@ class _DescPTState extends State<DescPT> {
                   },
                   child: Text("Like"),
                   style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                          (Set<MaterialState> states) {
-                        if (states.contains(MaterialState.pressed)) {
-                          // Change the color when the button is pressed
-                          return Colors.blue; // Replace with your desired color
-                        }
-                        return Colors.grey; // Replace with your default color
-                      },
-                    ),
+                    backgroundColor: isButtonPressed
+                        ? MaterialStatePropertyAll<Color>(Colors.red)
+                        : MaterialStatePropertyAll<Color>(Colors.blue),
                   ),
-
                 ),
               ],
             );
@@ -73,4 +68,10 @@ class _DescPTState extends State<DescPT> {
   }
 }
 
-
+Future<void> onLikePressed(String likedEntry) async {
+  print(likedEntry);
+  // Handle adding the liked entry to the database
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('Favorites', <String>[likedEntry]);
+  // You can also update the state to refresh the list of liked entries.
+}

@@ -223,9 +223,4 @@ class EntryWidget extends StatelessWidget {
 }
 */
 
-Future<void> onLikePressed(String likedEntry) async {
-  // Handle adding the liked entry to the database
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('Favorites', <String>[likedEntry]);
-  // You can also update the state to refresh the list of liked entries.
-}
+
