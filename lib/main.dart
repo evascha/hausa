@@ -1,25 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-//import 'package:flutter_launcher_icons/android.dart';
 import 'dart:convert';
 import 'package:convert/convert.dart';
 import 'package:http/http.dart' as http;
+import 'package:sqflite/sqflite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'Categories.dart';
+import 'Favorites.dart';
+import 'LexemeEntry.dart';
+import 'LikedEntry.dart';
+import 'SearchingRoute.dart';
+import 'SettingsRoute.dart';
 
 /// Flutter code sample for [AppBar].
 /// Future Class for the SparqlQuery
-Future<List<ResultItem>> fetchSparql(String searchQuery) async {
+Future<List<LexemeEntry>> fetchSparql(String searchQuery) async {
   final endpointUrl = "https://query.wikidata.org/sparql";
   final query = '''
-    SELECT ?lemma ?full_work_at WHERE {
-      ?lexeme dct:language wd:Q3915462;
-             wikibase:lemma ?lemma.
-      ?lexeme p:P973 [ps:P973 ?full_work_at].
-      FILTER (contains(lcase(?lemma), "${searchQuery.toLowerCase()}")).
-    }
+    SELECT ?lexemeId ?lemma ?wird_beschrieben_in_URL ?full_work_at WHERE {
+  ?lexemeId dct:language wd:Q3915462;
+    wikibase:lemma ?lemma.
+  ?lexemeId p:P973 [ps:P973 ?wird_beschrieben_in_URL;
+                   pq:P953 ?full_work_at;
+                  ]. 
+  FILTER (contains(lcase(?lemma), "${searchQuery.toLowerCase()}")).
+}
   ''';
 
   try {
-    final response = await http.get(Uri.parse('$endpointUrl?format=json&query=$query'));
+    final response =
+    await http.get(Uri.parse('$endpointUrl?format=json&query=$query'));
 
     if (response.statusCode == 200) {
       final parsedResponse = jsonDecode(response.body);
@@ -35,26 +46,22 @@ Future<List<ResultItem>> fetchSparql(String searchQuery) async {
   }
 }
 
-class ResultItem {
-  final String lemma;
-  final String full_work_at;
-
-  ResultItem({required this.lemma, required this.full_work_at});
-}
 
 
-List<ResultItem> processSparqlResults(dynamic sparqlResults) {
-  final List<ResultItem> results = [];
+List<LexemeEntry> processSparqlResults(dynamic sparqlResults) {
+  final List<LexemeEntry> results = [];
 
   try {
     final List<dynamic> bindings = sparqlResults['results']['bindings'];
 
     for (var binding in bindings) {
       final String? lemma = binding['lemma']['value'];
-      final String? full_work_atValue = binding['full_work_at']['value'];
+      final String? full_work_at = binding['full_work_at']['value'];
+      final String? lexemeId = binding['lexemeId']['value'];
 
-      if (lemma != null && full_work_atValue != null) {
-        results.add(ResultItem(lemma: lemma, full_work_at: full_work_atValue));
+      if (lemma != null && full_work_at != null && lexemeId != null) {
+        results.add(LexemeEntry(
+            lemma: lemma, full_work_at: full_work_at, lexemeId: lexemeId));
       }
     }
   } catch (e) {
@@ -65,11 +72,13 @@ List<ResultItem> processSparqlResults(dynamic sparqlResults) {
   return results;
 }
 
-void main() {
-  runApp(const SignDictionary());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(SignDictionary());
 }
 
 class SignDictionary extends StatefulWidget {
+
   const SignDictionary({Key? key}) : super(key: key);
 
   @override
@@ -77,11 +86,16 @@ class SignDictionary extends StatefulWidget {
 }
 
 class SignDictionaryState extends State<SignDictionary> {
-  late Future<List<ResultItem>> futureSparql;
+  late Future<List<LexemeEntry>> futureSparql;
+
 
   @override
   void initState() {
     super.initState();
+    initializeData();
+  }
+
+  Future<void> initializeData() async {
     futureSparql = fetchSparql('');
   }
 
@@ -89,321 +103,129 @@ class SignDictionaryState extends State<SignDictionary> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Maganar hannu',
-      home: _AppBarExample(futureSparql: futureSparql,),
-      );
+      home: _HausaApp(futureSparql: futureSparql),
+    );
   }
 }
 
-class _AppBarExample extends StatelessWidget {
-  final Future<List<ResultItem>> futureSparql;
+class _HausaApp extends StatelessWidget {
+  final Future<List<LexemeEntry>> futureSparql;
 
-  _AppBarExample({required this.futureSparql});
+  _HausaApp({required this.futureSparql});
 
   get controller => null;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('maganar hannu'),
-            actions: <Widget>[
-              IconButton(
-                  icon: const Icon(Icons.filter),
-                  tooltip: 'Filter your language',
-                  onPressed: () {}
-              ),
-              IconButton(
-                  icon: const Icon(Icons.search),
-                  tooltip: 'Searching button',
-                  onPressed: () {
+        appBar: AppBar(title: const Text('maganar hannu'), actions: <Widget>[
+          IconButton(
+              icon: const Icon(Icons.filter),
+              tooltip: 'Filter your language',
+              onPressed: () {}),
+          IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: 'Searching button',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => SearchingRoute()),
+                );
+              }),
+          IconButton(
+              icon: const Icon(Icons.settings),
+              tooltip: 'Settings button',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SettingsRoute()),
+                );
+              }),
+        ]),
+        body: ListView(
+          children: <Widget>[
+            Container(
+                height: 100,
+                color: Colors.white,
+                child: GestureDetector(
+                  onTap: () {
                     Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => SearchingRoute()),
-                        );
-                    }
-              ),
-              IconButton(
-                  icon: const Icon(Icons.settings),
-                  tooltip: 'Settings button',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SettingsRoute()),
-                    );
-                  }
-              ),
-            ]
-        ),
-        body: ListView(
-            children: <Widget>[
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Favorites')),
-              ),
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Recent searches')),
-              ),
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Recent views')),
-              ),
-            ],
+                        MaterialPageRoute(
+                            builder: (context) => Favorites()
+                        ));
+                  },
+                  child: const Center(child: Text('Favorite entries')),
+                )),
+            Container(
+              height: 100,
+              color: Colors.white,
+              child: const Center(child: Text('Recent searches')),
+            ),
+            Container(
+              height: 100,
+              color: Colors.white,
+              child: const Center(child: Text('Recent views')),
+            ),
+          ],
         ),
         bottomNavigationBar: BottomAppBar(
-            child: IconButton(
-                icon: const Icon(Icons.category),
-                tooltip: 'Categories button',
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => CategoriesRoute(futureSparql: futureSparql)),
-                  );
-                }
-            ),
-        )
-    );
-  }
-}
-
-class SettingsRoute extends StatelessWidget {
-  const SettingsRoute({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings Route'),
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 8.0),
-        ),
-      ),
-    );
-  }
-}
-
-class SearchingRoute extends StatefulWidget {
-  @override
-  SearchScreenState createState() => SearchScreenState();
-}
-
-class SearchScreenState extends State<SearchingRoute> {
-  TextEditingController searchController = TextEditingController();
-
-  //String query = ""; // Store the search query
-
-
-  // Function to perform the search
-  void search() async {
-    // Perform your search with the query (e.g., using SPARQL)
-    // Fetch and process the search results
-    String searchQuery = searchController.text;
-    // Navigate to the results screen or widget
-    final searchResults = await fetchSparql(searchQuery);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SearchResultsScreen(searchResults: fetchSparql(searchQuery)),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Searching screen'),
-      ),
-      body: Center(
-        child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              TextField(
-                controller: searchController, // Use the controller to capture user input
-                decoration: InputDecoration(
-                  hintText: "Enter your search query",
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    // The searchQuery will be updated as the user types
-                  });
-                },
-              ),
-            ElevatedButton(
+          child: IconButton(
+              icon: const Icon(Icons.category),
+              tooltip: 'Categories button',
               onPressed: () {
-                search();
-              },
-              child: Text("Search"),
-            )
-          ]
-
-        ),
-      ),
-    );
-  }
-}
-
-
-class SearchResultsScreen extends StatelessWidget {
-  final Future<List<ResultItem>> searchResults;
-
-  SearchResultsScreen({required this.searchResults});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Search Results"),
-      ),
-      body: FutureBuilder<List<ResultItem>>(
-        future: searchResults,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No results found.'));
-          } else {
-            final List<ResultItem> results = snapshot.data!;
-            return ListView.builder(
-              itemCount: results.length,
-              itemBuilder: (context, index) {
-                final ResultItem result = results[index];
-                final String imageUrl = result.full_work_at;
-
-                return ListTile(
-                  title: Text(result.lemma),
-                  subtitle: Image.network(imageUrl),
-                );
-              },
-            );
-          }
-        },
-      ),
-    );
+                Navigator.push(context,
+                    MaterialPageRoute(
+                        builder: (context) => CategoriesClass()));
+              }),
+        ));
   }
 }
 
 
 
-class CategoriesRoute extends StatelessWidget {
-  final Future<List<ResultItem>> futureSparql;
+//Database as a Singleton
 
-  CategoriesRoute({required this.futureSparql});
-
-  get controller => null;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: const Text('Categories screen'),
-        ),
-        body: ListView(
-            children: <Widget>[
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Family')),
-              ),
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Meeting and Communication')),
-              ),
-             /* Container(
-                height: 100,
-                color: Colors.white,
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => DescPT(futureSparql: futureSparql)),
-                      );
-                    },
-                    child: const Center(child: Text('Describing people and things')),
-              )
-              ),*/
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Commerce and counting')),
-              ),
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Everyday activities')),
-              ),
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Time and weather')),
-              ),
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Education')),
-              ),
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Things and activites in the house')),
-              ),
-              Container(
-                height: 100,
-                color: Colors.white,
-                child: const Center(child: Text('Religion')),
-              ),
-            ])
-    );
-  }
+Future<List<String>?> getLikedEntries() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final List<String>? items = prefs.getStringList('Favorites');
+  return items;
 }
-
 
 /*
-class DescPT extends StatelessWidget {
-  final Future<List<ResultItem>> futureSparql;
+class EntryWidget extends StatelessWidget {
+  final LikedEntry data;
+  final Function(LikedEntry) onLikePressed;
 
-  DescPT({required this.futureSparql});
+  EntryWidget({required this.data, required this.onLikePressed});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Describing people and things'),
-      ),
-      body: ListView(
-        children: <Widget>[
-        FutureBuilder<List<ResultItem>>(
-          future: futureSparql,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return Column(
-                children: <Widget> [
-                  Text(snapshot.data!.lexemeId),
-                  Text(snapshot.data!.lemma),
-                  Text(snapshot.data!.wird_beschrieben_in_URL),
-                  Image.network(snapshot.data!.full_work_at),
-                ]
-              );
-            } else if(snapshot.hasError) {
-              return Text('${snapshot.error}');
-            }
-            return const CircularProgressIndicator();
-          }
-      ),
-      ]
-      ),
-    );
+    return Column(children: <Widget>[
+      Text(data.lexemeId1 as String),
+      Text(data.lemma1),
+      Image.network(data.full_work_at1),
+      ElevatedButton(
+        onPressed: () {
+          final likedEntry = LikedEntry(
+            lexemeId1: data.lexemeId1.hashCode,
+            lemma1: data.lemma1,
+            full_work_at1: data.full_work_at1,
+          );
+          onLikePressed(likedEntry);
+        },
+        child: Text("Like"),
+      )
+    ]);
   }
 }
+*/
 
- */
+Future<void> onLikePressed(String likedEntry) async {
+  // Handle adding the liked entry to the database
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('Favorites', <String>[likedEntry]);
+  // You can also update the state to refresh the list of liked entries.
+}
