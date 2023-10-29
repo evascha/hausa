@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:convert/convert.dart';
 import 'package:http/http.dart' as http;
+import 'package:logging/logging.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,6 +13,9 @@ import 'LexemeEntry.dart';
 import 'LikedEntry.dart';
 import 'SearchingRoute.dart';
 import 'SettingsRoute.dart';
+
+final log = Logger('HausaApp');
+
 
 /// Flutter code sample for [AppBar].
 /// Future Class for the SparqlQuery
@@ -53,12 +57,16 @@ List<LexemeEntry> processSparqlResults(dynamic sparqlResults) {
 
   try {
     final List<dynamic> bindings = sparqlResults['results']['bindings'];
-
+    String? lemma;
     for (var binding in bindings) {
-      final String? lemma = binding['lemma']['value'];
+      print("working on this binding:");
+      print(binding);
+      lemma = binding['lemma']['value'];
       final String? full_work_at = binding['full_work_at']['value'];
-      final String? lexemeId = binding['lexemeId']['value'];
-
+      String lexemeId = "L23414";
+      if (binding['lexemeId'] != null) {
+        lexemeId = binding['lexemeId']['value'];
+      }
       if (lemma != null && full_work_at != null && lexemeId != null) {
         results.add(LexemeEntry(
             lemma: lemma, full_work_at: full_work_at, lexemeId: lexemeId));
