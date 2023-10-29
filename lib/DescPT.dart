@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hausa/LexemeEntry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'Categories.dart';
@@ -6,13 +7,13 @@ import 'LikedEntry.dart';
 import 'main.dart';
 
 class DescPT extends StatefulWidget {
-  final Function(LikedEntry) onLikePressed;
+  final Function(LexemeEntry) onLikePressed;
   final Future<Categories> futureCategories;
 
   DescPT(
       {required this.futureCategories,
       required this.onLikePressed,
-      required List<LikedEntry> likedEntries});
+      required List<LexemeEntry> lexemeEntry});
 
   @override
   _DescPTState createState() => _DescPTState();
@@ -37,14 +38,14 @@ class _DescPTState extends State<DescPT> {
               children: <Widget>[
                 Column(
                   children: <Widget>[
-                    Text(data!.lexemeId),
+                    Text(data!.lexemeId.replaceAll("http://www.wikidata.org/entity/", '')),
                     Text(data!.lemma),
                     Image.network(data!.full_work_at),
                   ],
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    onLikePressed(data!.lexemeId);
+                    onLikePressed(data!.lexemeId.replaceAll("http://www.wikidata.org/entity/", ''));
                     setState(() {
                       isButtonPressed = true;
                     });

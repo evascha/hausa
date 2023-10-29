@@ -74,7 +74,7 @@ List<LexemeEntry> processSparqlResults(dynamic sparqlResults) {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(SignDictionary());
+  runApp(const SignDictionary());
 }
 
 class SignDictionary extends StatefulWidget {
@@ -154,7 +154,7 @@ class _HausaApp extends StatelessWidget {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => Favorites()
+                            builder: (context) => const Favorites()
                         ));
                   },
                   child: const Center(child: Text('Favorite entries')),
@@ -188,11 +188,7 @@ class _HausaApp extends StatelessWidget {
 
 //Database as a Singleton
 
-Future<List<String>?> getLikedEntries() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final List<String>? items = prefs.getStringList('Favorites');
-  return items;
-}
+
 
 /*
 class EntryWidget extends StatelessWidget {

@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -6,7 +5,6 @@ import 'LexemeEntry.dart';
 import 'main.dart';
 
 class SearchingRoute extends StatefulWidget {
-
   SearchingRoute({Key? key}) : super(key: key);
 
   @override
@@ -16,7 +14,6 @@ class SearchingRoute extends StatefulWidget {
 class SearchScreenState extends State<SearchingRoute> {
   TextEditingController searchController = TextEditingController();
   late Future<List<LexemeEntry>> futureSparql = fetchSparql("");
-
 
   @override
   void initState() {
@@ -78,7 +75,6 @@ class SearchScreenState extends State<SearchingRoute> {
 }
 
 class SearchResultsScreen extends StatelessWidget {
-
   final List<LexemeEntry> searchResults;
 
   SearchResultsScreen({required this.searchResults});
@@ -92,19 +88,16 @@ class SearchResultsScreen extends StatelessWidget {
       body: searchResults.isEmpty
           ? Center(child: Text('No results found.'))
           : ListView.builder(
-        itemCount: searchResults.length,
-        itemBuilder: (context, index) {
-          final LexemeEntry result = searchResults[index];
-
-          // Assuming result.full_work_at contains the image URL
-
-          return ListTile(
-            title: Text(result.lemma),
-            subtitle: Image.network(result.full_work_at),
-            // You can display more information or customize the UI as needed
-          );
-        },
-      ),
+              itemCount: searchResults.length,
+              itemBuilder: (context, index) {
+                final LexemeEntry result = searchResults[index];
+                // Assuming result.full_work_at contains the image URL
+                return ListTile(
+                  title: Text(result.lemma),
+                  subtitle: Image.network(result.full_work_at),
+                );
+              },
+            ),
     );
   }
 }

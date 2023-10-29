@@ -114,7 +114,7 @@ class _CategoriesRoute extends State<CategoriesClass> {
                             DescPT(
                               futureCategories: futureCategories,
                               onLikePressed: (LikedEntry) {},
-                              likedEntries: [],)));
+                              lexemeEntry: [],)));
               },
               child:
               const Center(child: Text('Describing people and things')),
