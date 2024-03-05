@@ -44,7 +44,7 @@ class SearchScreenState extends State<SearchingRoute> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Searching screen'),
+        title: const Text('Search'),
       ),
       body: Center(
         child: Column(
@@ -95,6 +95,7 @@ class SearchResultsScreen extends StatelessWidget {
                 return ListTile(
                   title: Text(result.lemma),
                   subtitle: Image.network(result.full_work_at),
+                  trailing: Text(result.gloss)
                 );
               },
             ),

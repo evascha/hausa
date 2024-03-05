@@ -11,11 +11,13 @@ class Categories {
   final String lemma;
   final String lexemeId;
   final String full_work_at;
+  final String gloss;
 
   const Categories({
     required this.lemma,
     required this.lexemeId,
     required this.full_work_at,
+    required this.gloss
   });
 
   factory Categories.fromJson(Map<String, dynamic> json) {
@@ -34,16 +36,21 @@ class Categories {
       final Map<String, dynamic> full_work_at = firstBinding['full_work_at'];
       final String full_work_atValue = full_work_at['value'] as String;
 
+      final Map<String, dynamic> gloss = firstBinding['gloss'];
+      final String glossValue = gloss['value'] as String;
+
       return Categories(
           lexemeId: lexemeIdValue,
           lemma: lemmaValue,
-          full_work_at: full_work_atValue);
+          full_work_at: full_work_atValue,
+          gloss: glossValue);
     } else {
       // Handle the case when the 'bindings' array is empty
       return Categories(
           lexemeId: "n",
           lemma: "l",
-          full_work_at: "w"); // or set default values as needed
+          full_work_at: "w",
+          gloss: "g"); // or set default values as needed
     }
   }
 }
@@ -157,7 +164,7 @@ class _CategoriesRoute extends State<CategoriesClass> {
 
 Future<Categories> fetchAlbum() async {
   final response = await http.get(Uri.parse(
-      'https://query.wikidata.org/sparql?format=json&query=%23Lexemes%20in%20English%20that%20match%20an%20expression%0A%23%20Lexemes%20in%20English%20that%20match%20an%20expression%0ASELECT%20%3FlexemeId%20%3Flemma%20%3Fwird_beschrieben_in_URL%20%3Ffull_work_at%20WHERE%20%7B%0A%20%20%3FlexemeId%20dct%3Alanguage%20wd%3AQ3915462%3B%0A%20%20%20%20wikibase%3Alemma%20%3Flemma.%0A%20%20%3FlexemeId%20p%3AP973%20%5Bps%3AP973%20%3Fwird_beschrieben_in_URL%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20pq%3AP953%20%3Ffull_work_at%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5D.%20%0A%20%20%23%3Fwird_beschrieben_in_URL%20pq%3AP953%20%3Ffull_work_at.%0A%7D%0A'));
+      'https://query.wikidata.org/sparql?format=json&query=%20SELECT%20%3FlexemeId%20%3Flemma%20%3Fwird_beschrieben_in_URL%20%3Ffull_work_at%20%3Fgloss%20WHERE%20%7B%0A%20%20%3FlexemeId%20dct%3Alanguage%20wd%3AQ3915462%3B%0A%20%20%20%20ontolex%3Asense%20%3Fsense%3B%0A%20%20%20%20wikibase%3Alemma%20%3Flemma%3B%0A%20%20%20%20p%3AP973%20_%3Ab10.%0A%20%20_%3Ab10%20ps%3AP973%20%3Fwird_beschrieben_in_URL%3B%0A%20%20%20%20pq%3AP953%20%3Ffull_work_at.%0A%20%20%3Fsense%20skos%3Adefinition%20%3Fgloss%20%20%0A%20%20FILTER(LANG(%3Fgloss)%20%3D%20%22en%22)%0A%20%20%0A%7D%0A%0A'));
 
   if (response.statusCode == 200) {
     // If the server did return a 200 OK response,

@@ -22,13 +22,17 @@ final log = Logger('HausaApp');
 Future<List<LexemeEntry>> fetchSparql(String searchQuery) async {
   final endpointUrl = "https://query.wikidata.org/sparql";
   final query = '''
-    SELECT ?lexemeId ?lemma ?wird_beschrieben_in_URL ?full_work_at WHERE {
+    SELECT ?lexemeId ?lemma ?wird_beschrieben_in_URL ?full_work_at ?gloss WHERE {
   ?lexemeId dct:language wd:Q3915462;
-    wikibase:lemma ?lemma.
-  ?lexemeId p:P973 [ps:P973 ?wird_beschrieben_in_URL;
-                   pq:P953 ?full_work_at;
-                  ]. 
-  FILTER (contains(lcase(?lemma), "${searchQuery.toLowerCase()}")).
+    ontolex:sense ?sense;
+    wikibase:lemma ?lemma;
+    p:P973 _:b10.
+  _:b10 ps:P973 ?wird_beschrieben_in_URL;
+    pq:P953 ?full_work_at.
+  ?sense skos:definition ?gloss . 
+  FILTER(LANG(?gloss) = "en")
+  
+  FILTER(CONTAINS(LCASE(?lemma), "${searchQuery.toLowerCase()}"))
 }
   ''';
 
@@ -58,22 +62,24 @@ List<LexemeEntry> processSparqlResults(dynamic sparqlResults) {
   try {
     final List<dynamic> bindings = sparqlResults['results']['bindings'];
     String? lemma;
+    String? gloss;
     for (var binding in bindings) {
       print("working on this binding:");
       print(binding);
       lemma = binding['lemma']['value'];
       final String? full_work_at = binding['full_work_at']['value'];
       String lexemeId = "L23414";
+      gloss = binding['gloss']['value'];
       if (binding['lexemeId'] != null) {
         lexemeId = binding['lexemeId']['value'];
       }
-      if (lemma != null && full_work_at != null && lexemeId != null) {
+      if (lemma != null && full_work_at != null && lexemeId != null && gloss != null) {
         results.add(LexemeEntry(
-            lemma: lemma, full_work_at: full_work_at, lexemeId: lexemeId));
+            lemma: lemma, full_work_at: full_work_at, lexemeId: lexemeId, gloss: gloss));
       }
     }
   } catch (e) {
-    // Handle any exceptions or errors here
+    // Handle any exceptions or errors heere
     print('Error processing SPARQL results: $e');
   }
 
@@ -128,9 +134,15 @@ class _HausaApp extends StatelessWidget {
     return Scaffold(
         appBar: AppBar(title: const Text('maganar hannu'), actions: <Widget>[
           IconButton(
-              icon: const Icon(Icons.filter),
-              tooltip: 'Filter your language',
-              onPressed: () {}),
+              icon: const Icon(Icons.star),
+              tooltip: 'Favourite entries',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => Favorites()),
+                );
+              }),
           IconButton(
               icon: const Icon(Icons.search),
               tooltip: 'Searching button',
@@ -155,18 +167,11 @@ class _HausaApp extends StatelessWidget {
         body: ListView(
           children: <Widget>[
             Container(
-                height: 100,
-                color: Colors.white,
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const Favorites()
-                        ));
-                  },
-                  child: const Center(child: Text('Favorite entries')),
-                )),
+              height: 100,
+              color: Colors.white,
+              child: const Center(child: Text('Most popular entries')),
+            ),
+
             Container(
               height: 100,
               color: Colors.white,
@@ -191,40 +196,5 @@ class _HausaApp extends StatelessWidget {
         ));
   }
 }
-
-
-
-//Database as a Singleton
-
-
-
-/*
-class EntryWidget extends StatelessWidget {
-  final LikedEntry data;
-  final Function(LikedEntry) onLikePressed;
-
-  EntryWidget({required this.data, required this.onLikePressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(children: <Widget>[
-      Text(data.lexemeId1 as String),
-      Text(data.lemma1),
-      Image.network(data.full_work_at1),
-      ElevatedButton(
-        onPressed: () {
-          final likedEntry = LikedEntry(
-            lexemeId1: data.lexemeId1.hashCode,
-            lemma1: data.lemma1,
-            full_work_at1: data.full_work_at1,
-          );
-          onLikePressed(likedEntry);
-        },
-        child: Text("Like"),
-      )
-    ]);
-  }
-}
-*/
 
 

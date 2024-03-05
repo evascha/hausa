@@ -40,6 +40,7 @@ class _DescPTState extends State<DescPT> {
                   children: <Widget>[
                     Text(data!.lexemeId.replaceAll("http://www.wikidata.org/entity/", '')),
                     Text(data!.lemma),
+                    Text(data!.gloss),
                     Image.network(data!.full_work_at),
                   ],
                 ),
@@ -50,7 +51,7 @@ class _DescPTState extends State<DescPT> {
                       isButtonPressed = true;
                     });
                   },
-                  child: Text("Like"),
+                  child: Text("Add to Favorites"),
                   style: ButtonStyle(
                     backgroundColor: isButtonPressed
                         ? MaterialStatePropertyAll<Color>(Colors.red)
